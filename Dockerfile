@@ -1,10 +1,12 @@
 # Base image: debian 9 (stretch) for php5.6 building
 FROM debian:stretch
 
-# 替换为清华大学稳定镜像源，解决Stretch版本源访问失败问题
-RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+# 替换为清华archive源（Stretch已停止维护，仅存档源可访问）
+RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch-updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list
 
-# 安装构建依赖，修正命令连接符错误
+# 修正命令连接符，补全所有隐性依赖，一次更新安装成功
 RUN apt-get update && apt-get install -y \
     build-essential \
     dh-make \
@@ -16,6 +18,10 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     wget \
+    bzip2 \
+    zlib1g-dev \
+    libmcrypt-dev \
+    libreadline-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Work directory
@@ -45,3 +51,6 @@ RUN cd /build/php5.6-5.6.40 \
     && echo '            --with-curl \' >> debian/rules \
     && echo '            --with-jpeg-dir=/usr \' >> debian/rules \
     && echo '            --with-freetype-dir=/usr' >> debian/rules
+
+# 直接执行构建，跳过GPG签名，输出可用deb包
+RUN cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -j$(nproc)
