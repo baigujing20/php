@@ -1,34 +1,34 @@
-name: Docker Image CI
+name: Build PHP5.6 DEB
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: |
-          # 把之前的Dockerfile放到项目根目录，这里直接构建
-          docker build -t php56-deb-builder .
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Build DEB package inside container
+      # 新增：安装Docker环境，解决CI环境无Docker的问题
+      - name: Install Docker
         run: |
-          # 启动容器执行打包，完成后直接拷出deb
-          docker run --name php56-builder php56-deb-builder \
-            bash -c "cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -b"
-          docker cp php56-builder:/build/php5_5.6.40-1_amd64.deb ./php5.6_5.6.40-amd64.deb
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+          docker version
 
-      - name: Upload DEB to Artifacts
+      - name: Build Docker image
+        run: docker build -t php56-deb-builder .
+
+      - name: Export DEB package
+        run: |
+          container_id=$(docker create php56-deb-builder)
+          docker cp $container_id:/build/php5.6-5.6.40/debian/php5.6_*.deb ./php-5.6.40.deb
+          docker rm $container_id
+
+      - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: php5.6-deb-amd64
-          path: ./php5.6_5.6.40-amd64.deb
-          retention-days: 30
+          name: php-5.6.40-deb
+          path: php-5.6.40.deb
