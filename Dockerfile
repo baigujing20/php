@@ -1,8 +1,9 @@
 FROM debian:stretch
 LABEL maintainer="php5.6-deb-builder"
 
-# 换国内源加快下载，嫌慢可以注释掉用官方源
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+# 替换为存档源，解决原源证书过期问题
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list \
+    && sed -i '/security.debian.org/d' /etc/apt/sources.list
 
 # 安装所有依赖
 RUN apt update && apt install -y --no-install-recommends \
