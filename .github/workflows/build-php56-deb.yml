@@ -1,0 +1,31 @@
+name: Build PHP5.6 DEB Package
+
+on:
+  # 手动触发打包，也可以开push触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          # 把之前的Dockerfile放到项目根目录，这里直接构建
+          docker build -t php56-deb-builder .
+
+      - name: Build DEB package inside container
+        run: |
+          # 启动容器执行打包，完成后直接拷出deb
+          docker run --name php56-builder php56-deb-builder \
+            bash -c "cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -b"
+          docker cp php56-builder:/build/php5_5.6.40-1_amd64.deb ./php5.6_5.6.40-amd64.deb
+
+      - name: Upload DEB to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: php5.6-deb-amd64
+          path: ./php5.6_5.6.40-amd64.deb
+          retention-days: 30
