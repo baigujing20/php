@@ -19,7 +19,8 @@ RUN apt update -y --allow-unauthenticated \
 # 下载官方PHP 5.6.40源码，跳过SSL验证解决证书过期问题
 WORKDIR /build
 RUN wget --no-check-certificate https://www.php.net/distributions/php-5.6.40.tar.gz \
-    && tar xzf php-5.6.40.tar.gz
+    && tar xzf php-5.6.40.tar.gz \
+    && rm -rf php-5.6.40.tar.gz
 
 # 把本地的debian打包配置复制进源码目录
 COPY debian/ /build/php-5.6.40/debian/
