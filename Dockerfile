@@ -5,13 +5,16 @@ FROM --platform=linux/arm64 ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 适配arm64架构，直接重写完整的阿里云apt源
-RUN echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list
+RUN rm /etc/apt/sources.list && \
+     apt update && \
+     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" > /etc/apt/sources.list && \
+     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
+     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
+     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
+     apt update
 
 # 安装编译、依赖、打包工具
-RUN apt-get update && apt-get install -y \
+RUN apt install -y \
     build-essential \
     wget \
     libxml2-dev \
