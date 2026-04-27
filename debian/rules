@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	./configure \
+		--prefix=/usr/local/php56 \
+		--with-config-file-path=/usr/local/php56/etc \
+		--enable-fpm \
+		--enable-mbstring \
+		--enable-mysqlnd \
+		--with-mysql=mysqlnd \
+		--with-mysqli=mysqlnd \
+		--with-pdo-mysql=mysqlnd \
+		--with-gd \
+		--with-jpeg-dir=/usr \
+		--with-png-dir=/usr \
+		--with-freetype-dir=/usr \
+		--enable-gd-native-ttf \
+		--with-curl \
+		--with-openssl \
+		--with-mcrypt \
+		--with-zlib \
+		--enable-zip \
+		--with-tidy \
+		--with-xsl \
+		--enable-inline-optimization
