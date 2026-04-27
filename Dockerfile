@@ -4,9 +4,11 @@ FROM --platform=linux/arm64 ubuntu:20.04
 # 禁用交互式安装提示
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 替换为阿里国内apt源，解决网络拉取失败问题
-RUN sed -i 's@ports.ubuntu.com@mirrors.aliyun.com@g' /etc/apt/sources.list && \
-    sed -i 's@archive.ubuntu.com@mirrors.aliyun.com@g' /etc/apt/sources.list
+# 适配arm64架构，直接重写完整的阿里云apt源
+RUN echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list
 
 # 安装编译、依赖、打包工具
 RUN apt-get update && apt-get install -y \
