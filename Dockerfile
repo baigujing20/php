@@ -7,10 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 适配arm64架构，直接重写完整的阿里云apt源
 RUN rm /etc/apt/sources.list && \
      apt update && \
-     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" > /etc/apt/sources.list && \
-     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
-     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
-     echo "deb http://mirrors.aliyun.com/ubuntu-ports/ focal main restricted universe multiverse" >> /etc/apt/sources.list && \
+     echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ focal main contrib non-free" > /etc/apt/sources.list && \
      apt update
 
 # 安装编译、依赖、打包工具
