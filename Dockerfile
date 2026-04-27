@@ -29,7 +29,7 @@ RUN apt install -y \
 
 # 下载PHP5.6最终稳定版源码（官方归档站可稳定获取）
 RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz && \
-    tar -zxf php-5.6.40.tar.gz && \
+    tar -xvf php-5.6.40.tar.gz && \
     rm php-5.6.40.tar.gz
 
 # 进入源码目录
