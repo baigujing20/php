@@ -30,9 +30,9 @@ RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
     && rm -f debian/*.ex debian/*.EX
 
 # 正确写入debian/rules配置
-RUN cat > /build/php5.6-5.6.40/debian/rules << 'EOF'
+RUN bash -c 'cat > /build/php5.6-5.6.40/debian/rules << EOF
 %:
-	dh $@
+	dh \$@
 
 override_dh_auto_configure:
 	./configure --prefix=/usr \
@@ -45,4 +45,4 @@ override_dh_auto_configure:
             --with-curl \
             --with-jpeg-dir=/usr \
             --with-freetype-dir=/usr
-EOF
+EOF'
