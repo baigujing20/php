@@ -1,43 +1,57 @@
-# 用arm64v8架构的Ubuntu16.04作为基础镜像
-FROM --platform=linux/arm64 ubuntu:16.04
+# Base image: debian 9 (stretch) for php5.6 building
+FROM debian:stretch
 
-ENV DEBIAN_FRONTEND=noninteractive
+# 替换为清华archive源（Stretch已停止维护，仅存档源可访问）
+RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch-updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list
 
-# 安装编译与打包依赖
+# 修正命令连接符，补全所有隐性依赖，一次更新安装成功
 RUN apt-get update && apt-get install -y \
     build-essential \
-    checkinstall \
-    wget \
+    dh-make \
+    devscripts \
+    debhelper \
     libxml2-dev \
     libcurl4-openssl-dev \
     libpng-dev \
     libjpeg-dev \
+    libfreetype6-dev \
+    wget \
+    bzip2 \
+    zlib1g-dev \
     libmcrypt-dev \
+    libreadline-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 下载PHP5.6最终版本源码
-WORKDIR /usr/local/src
+# Work directory
+WORKDIR /build
 
+# Download php5.6 source and create debian template
 RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
-    && tar -zxf php-5.6.40.tar.gz \
-    && rm php-5.6.40.tar.gz \
-    && cd php-5.6.40
-    
-WORKDIR /usr/local/src/php-5.6.40
+    && tar xvf php-5.6.40.tar.gz \
+    && rm -rf php-5.6.40.tar.gz \
+    && mv php-5.6.40 php5.6-5.6.40 \
+    && cd php5.6-5.6.40 \
+    && yes | dh_make -e your@email.com --createorig -y \
+    && rm -f debian/*.ex debian/*.EX
 
-# 编译配置（保留常用扩展，可自行修改）
-RUN ./configure --prefix=/usr/local/php5.6 \
-    --enable-fpm \
-    --enable-mbstring \
-    --with-mysqli \
-    --with-mcrypt \
-    --with-curl \
-    --with-gd \
-    --with-jpeg-dir \
-    --with-png-dir
+# Generate debian rules file
+RUN cd /build/php5.6-5.6.40 \
+    && echo '%:' > debian/rules \
+    && echo '	dh $@' >> debian/rules \
+    && echo '' >> debian/rules \
+    && echo 'override_dh_auto_configure:' >> debian/rules \
+    && echo './configure --prefix=/usr \' >> debian/rules \
+    && echo '            --with-config-file-path=/etc/php \' >> debian/rules \
+    && echo '            --enable-fpm \' >> debian/rules \
+    && echo '            --with-mysqli \' >> debian/rules \
+    && echo '            --with-pdo-mysql \' >> debian/rules \
+    && echo '            --with-gd \' >> debian/rules \
+    && echo '            --enable-mbstring \' >> debian/rules \
+    && echo '            --with-curl \' >> debian/rules \
+    && echo '            --with-jpeg-dir=/usr \' >> debian/rules \
+    && echo '            --with-freetype-dir=/usr' >> debian/rules
 
-# 编译
-RUN make -j$(nproc)
-
-# 打包生成arm64 deb包，不安装到容器内
-RUN checkinstall -D --install=no --pkgname=php5.6 --pkgversion=5.6.40 -y
+# 直接执行构建，跳过GPG签名，输出可用deb包
+RUN cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -j2
