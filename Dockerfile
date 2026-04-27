@@ -1,10 +1,10 @@
 # Base image: debian 9 (stretch) for php5.6 building
 FROM debian:stretch
 
-# Replace with aliyun mirror
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+# 替换为清华大学稳定镜像源，解决Stretch版本源访问失败问题
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
-# Install build dependencies
+# 安装构建依赖，修正命令连接符错误
 RUN apt-get update && apt-get install -y \
     build-essential \
     dh-make \
