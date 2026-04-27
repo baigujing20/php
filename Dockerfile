@@ -17,12 +17,14 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
+
 RUN wget https://www.php.net/distributions/php-5.6.40.tar.gz \
  && tar xvf php-5.6.40.tar.gz \
  && rm php-5.6.40.tar.gz \
  && cd php-5.6.40
  
 WORKDIR /root/php-5.6.40
+
 RUN dh_make --createorig -s -n -y
 
 VOLUME ["/output"]
