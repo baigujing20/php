@@ -29,7 +29,7 @@ RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
     && dh_make -e your@email.com --createorig -y \
     && rm -f debian/*.ex debian/*.EX
 
-# 正确写入debian/rules配置，全部小写保持语法正确
+# 正确写入debian/rules配置
 RUN cat > /build/php5.6-5.6.40/debian/rules << 'EOF'
 %:
 	dh $@
