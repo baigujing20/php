@@ -1,57 +1,93 @@
-# Base image: debian 9 (stretch) for php5.6 building
-FROM debian:stretch
+# 基础镜像选Arm64原生Ubuntu 16.04
+FROM arm64v8/ubuntu:16.04
 
-# 替换为清华archive源（Stretch已停止维护，仅存档源可访问）
-RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian/ stretch-updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-archive/debian-security stretch/updates main contrib non-free" >> /etc/apt/sources.list
+LABEL maintainer="PHP5.6 DEB Builder (arm64) <builder@example.com>"
 
-# 修正命令连接符，补全所有隐性依赖，一次更新安装成功
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 替换国内源，解决官方旧源Arm64拉取失败的问题
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get clean && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential \
-    dh-make \
     devscripts \
-    debhelper \
+    dh-make \
+    dpkg-dev \
+    libtool \
     libxml2-dev \
     libcurl4-openssl-dev \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
-    wget \
-    bzip2 \
-    zlib1g-dev \
     libmcrypt-dev \
-    libreadline-dev \
+    libmysqlclient-dev \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Work directory
-WORKDIR /build
+# 下载解压源码，保持目录规范
+WORKDIR /usr/src
+RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz && \
+    tar xzf php-5.6.40.tar.gz && \
+    rm -f php-5.6.40.tar.gz
 
-# Download php5.6 source and create debian template
-RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
-    && tar xvf php-5.6.40.tar.gz \
-    && rm -rf php-5.6.40.tar.gz \
-    && mv php-5.6.40 php5.6-5.6.40 \
-    && cd php5.6-5.6.40 \
-    && yes | dh_make -e your@email.com --createorig -y \
-    && rm -f debian/*.ex debian/*.EX
+WORKDIR /usr/src/php-5.6.40
 
-# Generate debian rules file
-RUN cd /build/php5.6-5.6.40 \
-    && echo '%:' > debian/rules \
-    && echo '	dh $@' >> debian/rules \
-    && echo '' >> debian/rules \
-    && echo 'override_dh_auto_configure:' >> debian/rules \
-    && echo './configure --prefix=/usr \' >> debian/rules \
-    && echo '            --with-config-file-path=/etc/php \' >> debian/rules \
-    && echo '            --enable-fpm \' >> debian/rules \
-    && echo '            --with-mysqli \' >> debian/rules \
-    && echo '            --with-pdo-mysql \' >> debian/rules \
-    && echo '            --with-gd \' >> debian/rules \
-    && echo '            --enable-mbstring \' >> debian/rules \
-    && echo '            --with-curl \' >> debian/rules \
-    && echo '            --with-jpeg-dir=/usr \' >> debian/rules \
-    && echo '            --with-freetype-dir=/usr' >> debian/rules
+# 初始化dh_make，生成配置模板
+RUN rm -rf debian && \
+    dh_make --createorig -s -n -y && \
+    > debian/control && \
+    cat >> debian/control << EOF
+Source: php5.6
+Section: web
+Priority: optional
+Maintainer: Custom Build <build@example.com>
+Build-Depends: debhelper (>= 9), libtool, libxml2-dev, libcurl4-openssl-dev, libpng-dev, libjpeg-dev, libfreetype6-dev, libmcrypt-dev, libmysqlclient-dev
+Standards-Version: 3.9.8
+Homepage: https://www.php.net/
 
-# 直接执行构建，跳过GPG签名，输出可用deb包
-RUN cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -j2
+Package: php5.6
+Version: 5.6.40-1
+Architecture: arm64
+Depends: \${shlibs:Depends}, \${misc:Depends}
+Description: Custom compiled PHP 5.6 for Ubuntu ARM64
+ Custom-built PHP 5.6 with common extensions, packaged as DEB.
+EOF
+
+# 适配Arm64的编译规则，去掉不兼容参数
+RUN > debian/rules && \
+    cat >> debian/rules << EOF
+#!/usr/bin/make -f
+
+%:
+	dh \$@
+
+override_dh_auto_configure:
+	dh_auto_configure -- --prefix=/usr/local/php5.6 \
+	--with-config-file-path=/usr/local/php5.6/etc \
+	--enable-fpm \
+	--enable-mbstring \
+	--enable-mbregex \
+	--enable-opcache \
+	--enable-sockets \
+	-with-mysql \
+	--with-mysqli \
+	--with-pdo-mysql \
+	--with-gd \
+	--with-jpeg-dir \
+	--with-png-dir \
+	--with-freetype-dir \
+	--with-curl \
+	--with-mcrypt \
+	--with-zlib \
+	--disable-fileinfo
+EOF
+
+RUN chmod +x debian/rules
+
+# 编译打包，Arm64编译略慢，耐心等即可
+RUN dpkg-buildpackage -us -uc -b -j$(nproc)
+
+# 导出deb包到挂载目录
+CMD ["sh", "-c", "cp /usr/src/php5.6_5.6.40-1_arm64.deb /output/ && echo 'Build completed! DEB saved to output directory'"]
