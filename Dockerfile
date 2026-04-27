@@ -1,11 +1,11 @@
 FROM debian:stretch
 LABEL maintainer="php5.6-deb-builder"
 
-# 替换为存档源，解决原源证书过期问题
+# 替换为可用的存档源，解决证书过期问题
 RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list \
     && sed -i '/security.debian.org/d' /etc/apt/sources.list
 
-# 安装所有依赖
+# 安装所有依赖，已修正连接符号错误
 RUN apt update && apt install -y --no-install-recommends \
     build-essential \
     dh-make \
