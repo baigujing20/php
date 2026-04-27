@@ -32,7 +32,7 @@ RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
     && tar xzf php-5.6.40.tar.gz \
     && mv php-5.6.40 php5.6-5.6.40 \
     && cd php5.6-5.6.40 \
-    && dh_make -e your@email.com --createorig -y \
+    && yes | dh_make -e your@email.com --createorig -y \
     && rm -f debian/*.ex debian/*.EX
 
 # Generate debian rules file
@@ -53,4 +53,4 @@ RUN cd /build/php5.6-5.6.40 \
     && echo '            --with-freetype-dir=/usr' >> debian/rules
 
 # 直接执行构建，跳过GPG签名，输出可用deb包
-RUN cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -j$(nproc)
+RUN cd /build/php5.6-5.6.40 && dpkg-buildpackage -us -uc -j2
