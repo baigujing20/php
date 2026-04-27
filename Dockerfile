@@ -1,60 +1,41 @@
-# 指定目标架构，不需要额外命令行参数
-FROM --platform=linux/arm64 ubuntu:20.04
-
-# 禁用交互式安装提示
+# 用arm64v8架构的Ubuntu16.04作为基础镜像
+FROM --platform=linux/arm64 ubuntu:16.04
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 适配arm64架构，直接重写完整的阿里云apt源
-RUN rm /etc/apt/sources.list && \
-     apt update && \
-     echo "deb http://mirrors.aliyun.com/ubuntu focal main" > /etc/apt/sources.list && \
-     apt update
+# 替换国内镜像源（加速下载，可选，去掉也能用）
+RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 
-# 安装编译、依赖、打包工具
-RUN apt install -y \
+# 安装编译与打包依赖
+RUN apt-get update && apt-get install -y \
     build-essential \
+    checkinstall \
     wget \
     libxml2-dev \
     libcurl4-openssl-dev \
     libpng-dev \
     libjpeg-dev \
-    libfreetype6-dev \
-    libzip-dev \
-    libssl-dev \
-    checkinstall \
+    libmcrypt-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 下载PHP5.6最终稳定版源码（官方归档站可稳定获取）
-RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz && \
-    tar xvf php-5.6.40.tar.gz && \
-    rm php-5.6.40.tar.gz && \
-    cd php-5.6.40
+# 下载PHP5.6最终版本源码
+WORKDIR /usr/local/src
+RUN wget https://museum.php.net/php5/php-5.6.40.tar.gz \
+    && tar -zxf php-5.6.40.tar.gz
+WORKDIR /usr/local/src/php-5.6.40
 
-# 进入源码目录
-WORKDIR /php-5.6.40
-
-# 基础常用编译配置，可自行修改增减扩展
+# 编译配置（保留常用扩展，可自行修改）
 RUN ./configure --prefix=/usr/local/php5.6 \
     --enable-fpm \
     --enable-mbstring \
-    --enable-zip \
     --with-mysqli \
-    --with-pdo-mysql \
+    --with-mcrypt \
     --with-curl \
     --with-gd \
-    --with-jpeg-dir=/usr \
-    --with-png-dir=/usr \
-    --with-freetype-dir=/usr \
-    --with-openssl
+    --with-jpeg-dir \
+    --with-png-dir
 
-# 编译，用checkinstall生成deb包（不安装到容器内）
-RUN make -j$(nproc) && \
-    checkinstall -D \
-    --install=no \
-    --pakdir=/output \
-    --pkgname=php5.6 \
-    --maintainer=local@build \
-    make install
+# 编译
+RUN make -j$(nproc)
 
-# 留空保持容器不退出
-CMD ["tail", "-f", "/dev/null"]
+# 打包生成arm64 deb包，不安装到容器内
+RUN checkinstall -D --install=no --pkgname=php5.6 --pkgversion=5.6.40 -y
