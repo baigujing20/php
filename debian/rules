@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	cd .. && cd php5.6-5.6.40 && ./configure \
+	--prefix=/usr/local/php5.6 \
+	--with-config-file-path=/usr/local/php5.6/etc \
+	--enable-fpm \
+	--enable-mbstring \
+	--enable-mysqlnd \
+	--with-mysql=mysqlnd \
+	--with-mysqli=mysqlnd \
+	--with-pdo-mysql=mysqlnd \
+	--with-mcrypt \
+	--with-gd \
+	--with-jpeg-dir=/usr \
+	--with-png-dir=/usr \
+	--with-freetype-dir=/usr \
+	--with-curl \
+	--with-openssl \
+	--with-zlib \
+	--enable-xml \
+	--with-tidy \
+	--with-xslt \
+	--enable-sockets
+# 不需要的扩展直接删掉这行就行
